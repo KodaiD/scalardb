@@ -1,0 +1,180 @@
+package com.scalar.db.storage.s3;
+
+import com.scalar.db.api.Scan;
+import com.scalar.db.api.TableMetadata;
+import com.scalar.db.io.DataType;
+import java.util.*;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
+@Immutable
+public class S3TableMetadata extends S3DatabaseObject {
+  private final LinkedHashSet<String> partitionKeyNames;
+  private final LinkedHashSet<String> clusteringKeyNames;
+  private final Map<String, String> clusteringOrders;
+  private final Set<String> secondaryIndexNames;
+  private final Map<String, String> columns;
+
+  public S3TableMetadata() {
+    this(null, null, null, null, null);
+  }
+
+  public S3TableMetadata(
+      @Nullable LinkedHashSet<String> partitionKeyNames,
+      @Nullable LinkedHashSet<String> clusteringKeyNames,
+      @Nullable Map<String, String> clusteringOrders,
+      @Nullable Set<String> secondaryIndexNames,
+      @Nullable Map<String, String> columns) {
+    this.partitionKeyNames = partitionKeyNames != null ? partitionKeyNames : new LinkedHashSet<>();
+    this.clusteringKeyNames =
+        clusteringKeyNames != null ? clusteringKeyNames : new LinkedHashSet<>();
+    this.clusteringOrders = clusteringOrders != null ? clusteringOrders : Collections.emptyMap();
+    this.secondaryIndexNames =
+        secondaryIndexNames != null ? secondaryIndexNames : Collections.emptySet();
+    this.columns = columns != null ? columns : Collections.emptyMap();
+  }
+
+  public S3TableMetadata(TableMetadata tableMetadata) {
+    Map<String, String> clusteringOrders =
+        tableMetadata.getClusteringKeyNames().stream()
+            .collect(Collectors.toMap(c -> c, c -> tableMetadata.getClusteringOrder(c).name()));
+    Map<String, String> columnTypeByName = new HashMap<>();
+    tableMetadata
+        .getColumnNames()
+        .forEach(
+            columnName ->
+                columnTypeByName.put(
+                    columnName, tableMetadata.getColumnDataType(columnName).name().toLowerCase()));
+    this.partitionKeyNames = tableMetadata.getPartitionKeyNames();
+    this.clusteringKeyNames = tableMetadata.getClusteringKeyNames();
+    this.clusteringOrders = clusteringOrders;
+    this.secondaryIndexNames = tableMetadata.getSecondaryIndexNames();
+    this.columns = columnTypeByName;
+  }
+
+  private S3TableMetadata(Builder builder) {
+    this(
+        builder.partitionKeyNames,
+        builder.clusteringKeyNames,
+        builder.clusteringOrders,
+        builder.secondaryIndexNames,
+        builder.columns);
+  }
+
+  public static Builder newBuilder() {
+    return new Builder();
+  }
+
+  public LinkedHashSet<String> getPartitionKeyNames() {
+    return partitionKeyNames;
+  }
+
+  public LinkedHashSet<String> getClusteringKeyNames() {
+    return clusteringKeyNames;
+  }
+
+  public Map<String, String> getClusteringOrders() {
+    return clusteringOrders;
+  }
+
+  public Set<String> getSecondaryIndexNames() {
+    return secondaryIndexNames;
+  }
+
+  public Map<String, String> getColumns() {
+    return columns;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof S3TableMetadata)) {
+      return false;
+    }
+    S3TableMetadata that = (S3TableMetadata) o;
+    return Objects.equals(partitionKeyNames, that.partitionKeyNames)
+        && Objects.equals(clusteringKeyNames, that.clusteringKeyNames)
+        && Objects.equals(clusteringOrders, that.clusteringOrders)
+        && Objects.equals(secondaryIndexNames, that.secondaryIndexNames)
+        && Objects.equals(columns, that.columns);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        partitionKeyNames, clusteringKeyNames, clusteringOrders, secondaryIndexNames, columns);
+  }
+
+  public TableMetadata toTableMetadata() {
+    TableMetadata.Builder builder = TableMetadata.newBuilder();
+    partitionKeyNames.forEach(builder::addPartitionKey);
+    clusteringKeyNames.forEach(
+        n -> builder.addClusteringKey(n, Scan.Ordering.Order.valueOf(clusteringOrders.get(n))));
+    secondaryIndexNames.forEach(builder::addSecondaryIndex);
+    columns.forEach((key, value) -> builder.addColumn(key, convertDataType(value)));
+    return builder.build();
+  }
+
+  private DataType convertDataType(String columnType) {
+    switch (columnType) {
+      case "int":
+        return DataType.INT;
+      case "bigint":
+        return DataType.BIGINT;
+      case "float":
+        return DataType.FLOAT;
+      case "double":
+        return DataType.DOUBLE;
+      case "text":
+        return DataType.TEXT;
+      case "boolean":
+        return DataType.BOOLEAN;
+      case "blob":
+        return DataType.BLOB;
+      default:
+        throw new AssertionError("Unknown column type: " + columnType);
+    }
+  }
+
+  public static final class Builder {
+    private LinkedHashSet<String> partitionKeyNames;
+    private LinkedHashSet<String> clusteringKeyNames;
+    private Map<String, String> clusteringOrders;
+    private Set<String> secondaryIndexNames;
+    private Map<String, String> columns;
+
+    private Builder() {}
+
+    public Builder partitionKeyNames(LinkedHashSet<String> val) {
+      partitionKeyNames = val;
+      return this;
+    }
+
+    public Builder clusteringKeyNames(LinkedHashSet<String> val) {
+      clusteringKeyNames = val;
+      return this;
+    }
+
+    public Builder clusteringOrders(Map<String, String> val) {
+      clusteringOrders = val;
+      return this;
+    }
+
+    public Builder secondaryIndexNames(Set<String> val) {
+      secondaryIndexNames = val;
+      return this;
+    }
+
+    public Builder columns(Map<String, String> val) {
+      columns = val;
+      return this;
+    }
+
+    public S3TableMetadata build() {
+      return new S3TableMetadata(this);
+    }
+  }
+}

@@ -764,6 +764,16 @@ public enum CoreError implements ScalarDbError {
       Category.USER_ERROR, "0165", "Missing namespace or table: %s, %s", "", ""),
   DATA_LOADER_TABLE_METADATA_RETRIEVAL_FAILED(
       Category.USER_ERROR, "0166", "Failed to retrieve table metadata. Details: %s", "", ""),
+  S3_CROSS_PARTITION_SCAN_WITH_ORDERING_NOT_SUPPORTED(
+      Category.USER_ERROR,
+      "0167",
+      "Cross-partition scan with ordering is not supported in S3",
+      "",
+      ""),
+  S3_IMPORT_NOT_SUPPORTED(
+      Category.USER_ERROR, "0168", "Import-related functionality is not supported in S3", "", ""),
+  S3_INDEX_NOT_SUPPORTED(
+      Category.USER_ERROR, "0169", "Index-related functionality is not supported in S3", "", ""),
 
   //
   // Errors for the concurrency error category
@@ -873,6 +883,14 @@ public enum CoreError implements ScalarDbError {
       Category.CONCURRENCY_ERROR,
       "0025",
       "A transaction conflict occurred in the Insert operation",
+      "",
+      ""),
+  S3_ERROR_OCCURRED_IN_MUTATION(
+      Category.CONCURRENCY_ERROR, "0026", "An error occurred in the mutation. Details: %s", "", ""),
+  S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION(
+      Category.CONCURRENCY_ERROR,
+      "0027",
+      "A transaction conflict occurred in the mutation. Details: %s",
       "",
       ""),
 
@@ -1027,6 +1045,8 @@ public enum CoreError implements ScalarDbError {
       "Something went wrong while scanning. Are you sure you are running in the correct transaction mode? Details: %s",
       "",
       ""),
+  S3_ERROR_OCCURRED_IN_SELECTION(
+      Category.INTERNAL_ERROR, "0049", "An error occurred in the selection. Details: %s", "", ""),
 
   //
   // Errors for the unknown transaction status error category
