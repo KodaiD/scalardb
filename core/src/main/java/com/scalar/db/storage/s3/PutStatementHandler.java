@@ -62,7 +62,7 @@ public class PutStatementHandler extends StatementHandler {
 
       currentRecord.getValues().forEach((key, value) -> record.getValues().putIfAbsent(key, value));
 
-      if (!wrapper.compareAndSwap(objectKey, response.getETag(), JsonConvertor.serialize(record))) {
+      if (!wrapper.compareAndSwap(objectKey, JsonConvertor.serialize(record), response.getETag())) {
         throw new RetriableExecutionException(
             CoreError.S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION.buildMessage());
       }
@@ -75,13 +75,16 @@ public class PutStatementHandler extends StatementHandler {
               || e2.getCode() == S3ClientWrapperException.StatusCode.CONFLICT) {
             throw new RetriableExecutionException(
                 CoreError.S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION.buildMessage(), e2);
+          } else {
+            throw new ExecutionException(
+                CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e2);
           }
-          throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e2);
         } catch (Exception e2) {
           throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e2);
         }
+      } else {
+        throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
       }
-      throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     }
@@ -97,11 +100,11 @@ public class PutStatementHandler extends StatementHandler {
       if (e.getCode() == S3ClientWrapperException.StatusCode.CONFLICT) {
         throw new RetriableExecutionException(
             CoreError.S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION.buildMessage(), e);
-      }
-      if (e.getCode() == S3ClientWrapperException.StatusCode.ALREADY_EXISTS) {
+      } else if (e.getCode() == S3ClientWrapperException.StatusCode.ALREADY_EXISTS) {
         throw new NoMutationException(CoreError.NO_MUTATION_APPLIED.buildMessage(), e);
+      } else {
+        throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
       }
-      throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     }
@@ -117,15 +120,16 @@ public class PutStatementHandler extends StatementHandler {
 
       currentRecord.getValues().forEach((key, value) -> record.getValues().putIfAbsent(key, value));
 
-      if (!wrapper.compareAndSwap(objectKey, response.getETag(), JsonConvertor.serialize(record))) {
+      if (!wrapper.compareAndSwap(objectKey, JsonConvertor.serialize(record), response.getETag())) {
         throw new RetriableExecutionException(
             CoreError.S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION.buildMessage());
       }
     } catch (S3ClientWrapperException e) {
       if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
         throw new NoMutationException(CoreError.NO_MUTATION_APPLIED.buildMessage(), e);
+      } else {
+        throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
       }
-      throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     }
@@ -150,15 +154,16 @@ public class PutStatementHandler extends StatementHandler {
 
       currentRecord.getValues().forEach((key, value) -> record.getValues().putIfAbsent(key, value));
 
-      if (!wrapper.compareAndSwap(objectKey, response.getETag(), JsonConvertor.serialize(record))) {
+      if (!wrapper.compareAndSwap(objectKey, JsonConvertor.serialize(record), response.getETag())) {
         throw new RetriableExecutionException(
             CoreError.S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION.buildMessage());
       }
     } catch (S3ClientWrapperException e) {
       if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
         throw new NoMutationException(CoreError.NO_MUTATION_APPLIED.buildMessage(), e);
+      } else {
+        throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
       }
-      throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     }

@@ -19,11 +19,11 @@ public class S3Record extends S3DatabaseObject {
   }
 
   public S3Record(
-      @Nullable String concatenatedPartitionKey,
+      @Nullable String concatenatedKey,
       @Nullable Map<String, Object> partitionKey,
       @Nullable Map<String, Object> clusteringKey,
       @Nullable Map<String, Object> values) {
-    this.concatenatedKey = concatenatedPartitionKey != null ? concatenatedPartitionKey : "";
+    this.concatenatedKey = concatenatedKey != null ? concatenatedKey : "";
     this.partitionKey = partitionKey != null ? partitionKey : Collections.emptyMap();
     this.clusteringKey = clusteringKey != null ? clusteringKey : Collections.emptyMap();
     this.values = values != null ? values : Collections.emptyMap();

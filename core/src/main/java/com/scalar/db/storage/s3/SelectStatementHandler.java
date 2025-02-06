@@ -90,8 +90,9 @@ public class SelectStatementHandler extends StatementHandler {
     } catch (S3ClientWrapperException e) {
       if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
         return Optional.empty();
+      } else {
+        throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
       }
-      throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
     }
@@ -108,8 +109,9 @@ public class SelectStatementHandler extends StatementHandler {
       } catch (S3ClientWrapperException e) {
         if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
           continue;
+        } else {
+          throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
         }
-        throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
       } catch (Exception e) {
         throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
       }
@@ -127,9 +129,10 @@ public class SelectStatementHandler extends StatementHandler {
         records.add(JsonConvertor.deserialize(response.getValue(), S3Record.class));
       } catch (S3ClientWrapperException e) {
         if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
-          continue;
+          // Do nothing
+        } else {
+          throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
         }
-        throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
       } catch (Exception e) {
         throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_SELECTION.buildMessage(), e);
       }

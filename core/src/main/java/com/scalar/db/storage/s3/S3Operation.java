@@ -50,10 +50,14 @@ public class S3Operation {
 
   @Nonnull
   public String getConcatenatedKey() {
-    return String.join(
-        S3Utils.PARTITION_KEY_DELIMITER,
-        getConcatenatedPartitionKey(),
-        getConcatenatedClusteringKey());
+    if (operation.getClusteringKey().isPresent()) {
+      return String.join(
+          S3Utils.PARTITION_KEY_DELIMITER,
+          getConcatenatedPartitionKey(),
+          getConcatenatedClusteringKey());
+    } else {
+      return getConcatenatedPartitionKey();
+    }
   }
 
   @SafeVarargs

@@ -74,8 +74,9 @@ public class DeleteStatementHandler extends StatementHandler {
     } catch (S3ClientWrapperException e) {
       if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
         throw new NoMutationException(CoreError.NO_MUTATION_APPLIED.buildMessage());
+      } else {
+        throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage());
       }
-      throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage());
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage());
     }
