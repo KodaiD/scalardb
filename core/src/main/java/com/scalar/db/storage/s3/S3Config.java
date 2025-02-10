@@ -100,7 +100,7 @@ public class S3Config {
     return bucket;
   }
 
-  public Optional<String> getMetadataNamespace() {
-    return Optional.ofNullable(metadataNamespace);
+  public String getMetadataNamespace() {
+    return metadataNamespace;
   }
 }

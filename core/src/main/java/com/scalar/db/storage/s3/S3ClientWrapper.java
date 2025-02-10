@@ -80,9 +80,10 @@ public class S3ClientWrapper {
 
   public Set<String> listKeys(String prefix) {
     return client
-        .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
-        .contents()
+        .listObjectsV2Paginator(
+            ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
         .stream()
+        .flatMap(response -> response.contents().stream())
         .map(S3Object::key)
         .collect(Collectors.toSet());
   }

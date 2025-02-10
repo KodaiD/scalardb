@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 public class S3Admin implements DistributedStorageAdmin {
-  private static final String NAMESPACE_TABLE = "namespaces";
-  private static final String METADATA_TABLE = "metadata";
+  public static final String NAMESPACE_TABLE = "namespaces";
+  public static final String METADATA_TABLE = "metadata";
 
   private final S3ClientWrapper wrapper;
   private final String metadataNamespace;
@@ -26,14 +26,12 @@ public class S3Admin implements DistributedStorageAdmin {
   public S3Admin(DatabaseConfig databaseConfig) {
     S3Config config = new S3Config(databaseConfig);
     wrapper = new S3ClientWrapper(config.getBucket(), S3Utils.buildS3Client(config));
-    metadataNamespace =
-        config.getMetadataNamespace().orElse(DatabaseConfig.DEFAULT_SYSTEM_NAMESPACE_NAME);
+    metadataNamespace = config.getMetadataNamespace();
   }
 
   public S3Admin(S3ClientWrapper wrapper, S3Config config) {
     this.wrapper = wrapper;
-    metadataNamespace =
-        config.getMetadataNamespace().orElse(DatabaseConfig.DEFAULT_SYSTEM_NAMESPACE_NAME);
+    metadataNamespace = config.getMetadataNamespace();
   }
 
   @Override
@@ -131,6 +129,12 @@ public class S3Admin implements DistributedStorageAdmin {
           wrapper.get(S3Utils.getObjectKey(metadataNamespace, METADATA_TABLE, namespace, table));
       return JsonConvertor.deserialize(response.getValue(), S3TableMetadata.class)
           .toTableMetadata();
+    } catch (S3ClientWrapperException e) {
+      if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
+        return null;
+      }
+      throw new ExecutionException(
+          String.format("Failed to get the metadata of the table %s.%s.", table, namespace), e);
     } catch (Exception e) {
       throw new ExecutionException(
           String.format("Failed to get the metadata of the table %s.%s.", table, namespace), e);
@@ -182,14 +186,24 @@ public class S3Admin implements DistributedStorageAdmin {
   @Override
   public void repairNamespace(String namespace, Map<String, String> options)
       throws ExecutionException {
-    // TODO: Implement this method
+    try {
+      upsertNamespace(namespace);
+    } catch (Exception e) {
+      throw new ExecutionException(
+          String.format("Failed to repair the namespace %s.", namespace), e);
+    }
   }
 
   @Override
   public void repairTable(
       String namespace, String table, TableMetadata metadata, Map<String, String> options)
       throws ExecutionException {
-    // TODO: Implement this method
+    try {
+      upsertTableMetadata(namespace, table, metadata);
+    } catch (Exception e) {
+      throw new ExecutionException(
+          String.format("Failed to repair the table %s.%s.", table, namespace), e);
+    }
   }
 
   @Override
@@ -264,6 +278,32 @@ public class S3Admin implements DistributedStorageAdmin {
     }
   }
 
+  private void upsertTableMetadata(String namespace, String table, TableMetadata metadata)
+      throws ExecutionException {
+    String objectKey = S3Utils.getObjectKey(metadataNamespace, METADATA_TABLE, namespace, table);
+    try {
+      S3ClientWrapperResponse response = wrapper.get(objectKey);
+      if (!wrapper.compareAndSwap(
+          objectKey, JsonConvertor.serialize(new S3TableMetadata(metadata)), response.getETag())) {
+        throw new ExecutionException(
+            String.format(
+                "Failed to upsert the table metadata %s.%s due to a conflict.", table, namespace));
+      }
+    } catch (S3ClientWrapperException e) {
+      if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
+        try {
+          wrapper.insert(objectKey, JsonConvertor.serialize(new S3TableMetadata(metadata)));
+        } catch (Exception e2) {
+          throw new ExecutionException("Failed to upsert the table metadata.", e2);
+        }
+      } else {
+        throw new ExecutionException("Failed to upsert the table metadata.", e);
+      }
+    } catch (Exception e) {
+      throw new ExecutionException("Failed to upsert the table metadata.", e);
+    }
+  }
+
   private void deleteTableMetadata(String namespace, String table) throws ExecutionException {
     try {
       wrapper.deleteIfExists(
@@ -280,6 +320,31 @@ public class S3Admin implements DistributedStorageAdmin {
           JsonConvertor.serialize(new S3Namespace(namespace)));
     } catch (Exception e) {
       throw new ExecutionException("Failed to insert the namespace.", e);
+    }
+  }
+
+  private void upsertNamespace(String namespace) throws ExecutionException {
+    String objectKey =
+        S3Utils.getObjectKey(metadataNamespace, NAMESPACE_TABLE, namespace, namespace);
+    try {
+      S3ClientWrapperResponse response = wrapper.get(objectKey);
+      if (!wrapper.compareAndSwap(
+          objectKey, JsonConvertor.serialize(new S3Namespace(namespace)), response.getETag())) {
+        throw new ExecutionException(
+            String.format("Failed to upsert the namespace %s due to a conflict.", namespace));
+      }
+    } catch (S3ClientWrapperException e) {
+      if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
+        try {
+          wrapper.insert(objectKey, JsonConvertor.serialize(new S3Namespace(namespace)));
+        } catch (Exception e2) {
+          throw new ExecutionException("Failed to upsert the namespace.", e2);
+        }
+      } else {
+        throw new ExecutionException("Failed to upsert the namespace.", e);
+      }
+    } catch (Exception e) {
+      throw new ExecutionException("Failed to upsert the namespace.", e);
     }
   }
 
