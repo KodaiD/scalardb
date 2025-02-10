@@ -3,6 +3,7 @@ package com.scalar.db.storage.s3;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class JsonConvertor {
   private static final ObjectMapper mapper = new ObjectMapper();
@@ -10,6 +11,7 @@ public class JsonConvertor {
   static {
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+    mapper.registerModule(new JavaTimeModule());
   }
 
   public static <T extends S3DatabaseObject> T deserialize(String json, Class<T> clazz) {

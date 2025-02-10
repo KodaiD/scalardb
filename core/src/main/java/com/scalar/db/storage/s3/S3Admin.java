@@ -1,5 +1,6 @@
 package com.scalar.db.storage.s3;
 
+import com.google.common.base.Splitter;
 import com.google.inject.Inject;
 import com.scalar.db.api.DistributedStorageAdmin;
 import com.scalar.db.api.TableMetadata;
@@ -8,6 +9,7 @@ import com.scalar.db.config.DatabaseConfig;
 import com.scalar.db.exception.storage.ExecutionException;
 import com.scalar.db.io.DataType;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -146,8 +148,8 @@ public class S3Admin implements DistributedStorageAdmin {
           .stream()
           .map(
               key -> {
-                String[] parts = key.split("/");
-                return parts.length > 0 ? parts[parts.length - 1] : "";
+                List<String> parts = Splitter.on(S3Utils.OBJECT_KEY_DELIMITER).splitToList(key);
+                return !parts.isEmpty() ? parts.get(parts.size() - 1) : "";
               })
           .filter(lastPart -> !lastPart.isEmpty())
           .collect(Collectors.toSet());
@@ -236,8 +238,8 @@ public class S3Admin implements DistributedStorageAdmin {
           .stream()
           .map(
               key -> {
-                String[] parts = key.split("/");
-                return parts.length > 0 ? parts[parts.length - 1] : "";
+                List<String> parts = Splitter.on(S3Utils.OBJECT_KEY_DELIMITER).splitToList(key);
+                return !parts.isEmpty() ? parts.get(parts.size() - 1) : "";
               })
           .filter(lastPart -> !lastPart.isEmpty())
           .collect(Collectors.toSet());

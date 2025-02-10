@@ -1,14 +1,14 @@
 package com.scalar.db.storage.s3;
 
 import com.scalar.db.api.*;
+import com.scalar.db.api.Scanner;
 import com.scalar.db.common.EmptyScanner;
 import com.scalar.db.common.TableMetadataManager;
 import com.scalar.db.common.error.CoreError;
 import com.scalar.db.exception.storage.ExecutionException;
 import com.scalar.db.util.ScalarDbUtils;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -61,9 +61,78 @@ public class SelectStatementHandler extends StatementHandler {
   private Scanner executeScan(Scan scan, TableMetadata metadata) throws ExecutionException {
     S3Operation operation = new S3Operation(scan, metadata);
     operation.checkArgument(Scan.class);
-    Set<S3Record> records =
-        getRecordsInPartition(
-            getNamespace(scan), getTable(scan), operation.getConcatenatedPartitionKey());
+    List<S3Record> records =
+        new ArrayList<>(
+            getRecordsInPartition(
+                getNamespace(scan), getTable(scan), operation.getConcatenatedPartitionKey()));
+
+    Map<String, Scan.Ordering.Order> orders = new HashMap<>(metadata.getClusteringOrders());
+
+    if (scan.getStartClusteringKey().isPresent()) {
+      Map<String, Object> startClusteringKey =
+          scan.getStartClusteringKey()
+              .map(
+                  k -> {
+                    MapVisitor visitor = new MapVisitor();
+                    k.getColumns().forEach(c -> c.accept(visitor));
+                    return visitor.get();
+                  })
+              .orElse(Collections.emptyMap());
+      records =
+          records.stream()
+              .filter(
+                  r -> {
+                    if (scan.getStartInclusive()) {
+                      return new ClusteringKeyComparator(orders)
+                              .compare(r.getClusteringKey(), startClusteringKey)
+                          >= 0;
+                    } else {
+                      return new ClusteringKeyComparator(orders)
+                              .compare(r.getClusteringKey(), startClusteringKey)
+                          > 0;
+                    }
+                  })
+              .collect(Collectors.toList());
+    }
+
+    if (scan.getEndClusteringKey().isPresent()) {
+      Map<String, Object> endClusteringKey =
+          scan.getEndClusteringKey()
+              .map(
+                  k -> {
+                    MapVisitor visitor = new MapVisitor();
+                    k.getColumns().forEach(c -> c.accept(visitor));
+                    return visitor.get();
+                  })
+              .orElse(Collections.emptyMap());
+      records =
+          records.stream()
+              .filter(
+                  r -> {
+                    if (scan.getEndInclusive()) {
+                      return new ClusteringKeyComparator(orders)
+                              .compare(r.getClusteringKey(), endClusteringKey)
+                          <= 0;
+                    } else {
+                      return new ClusteringKeyComparator(orders)
+                              .compare(r.getClusteringKey(), endClusteringKey)
+                          < 0;
+                    }
+                  })
+              .collect(Collectors.toList());
+    }
+
+    scan.getOrderings()
+        .forEach(ordering -> orders.put(ordering.getColumnName(), ordering.getOrder()));
+    records.sort(
+        (r1, r2) ->
+            new ClusteringKeyComparator(orders)
+                .compare(r1.getClusteringKey(), r2.getClusteringKey()));
+
+    if (scan.getLimit() > 0) {
+      records = records.subList(0, Math.min(scan.getLimit(), records.size()));
+    }
+
     return new RangeQueryScanner(
         records.iterator(),
         new ResultInterpreter(scan.getProjections(), metadata),
@@ -74,6 +143,9 @@ public class SelectStatementHandler extends StatementHandler {
     S3Operation operation = new S3Operation(scan, metadata);
     operation.checkArgument(ScanAll.class);
     Set<S3Record> records = getRecordsInTable(getNamespace(scan), getTable(scan));
+    if (scan.getLimit() > 0) {
+      records = records.stream().limit(scan.getLimit()).collect(Collectors.toSet());
+    }
     return new RangeQueryScanner(
         records.iterator(),
         new ResultInterpreter(scan.getProjections(), metadata),

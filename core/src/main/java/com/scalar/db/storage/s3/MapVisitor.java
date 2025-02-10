@@ -1,6 +1,7 @@
 package com.scalar.db.storage.s3;
 
 import com.scalar.db.io.*;
+import com.scalar.db.util.TimeRelatedColumnEncodingUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,21 +53,29 @@ public class MapVisitor implements ColumnVisitor {
 
   @Override
   public void visit(DateColumn column) {
-    values.put(column.getName(), column.hasNullValue() ? null : column.getDateValue());
+    values.put(
+        column.getName(),
+        column.hasNullValue() ? null : TimeRelatedColumnEncodingUtils.encode(column));
   }
 
   @Override
   public void visit(TimeColumn column) {
-    values.put(column.getName(), column.hasNullValue() ? null : column.getTimeValue());
+    values.put(
+        column.getName(),
+        column.hasNullValue() ? null : TimeRelatedColumnEncodingUtils.encode(column));
   }
 
   @Override
   public void visit(TimestampColumn column) {
-    values.put(column.getName(), column.hasNullValue() ? null : column.getTimestampValue());
+    values.put(
+        column.getName(),
+        column.hasNullValue() ? null : TimeRelatedColumnEncodingUtils.encode(column));
   }
 
   @Override
   public void visit(TimestampTZColumn column) {
-    values.put(column.getName(), column.hasNullValue() ? null : column.getTimestampTZValue());
+    values.put(
+        column.getName(),
+        column.hasNullValue() ? null : TimeRelatedColumnEncodingUtils.encode(column));
   }
 }

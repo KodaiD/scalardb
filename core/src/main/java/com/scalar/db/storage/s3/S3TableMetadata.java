@@ -134,6 +134,14 @@ public class S3TableMetadata extends S3DatabaseObject {
         return DataType.BOOLEAN;
       case "blob":
         return DataType.BLOB;
+      case "date":
+        return DataType.DATE;
+      case "time":
+        return DataType.TIME;
+      case "timestamp":
+        return DataType.TIMESTAMP;
+      case "timestamptz":
+        return DataType.TIMESTAMPTZ;
       default:
         throw new AssertionError("Unknown column type: " + columnType);
     }

@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.scalar.db.api.Operation;
 import com.scalar.db.api.TableMetadata;
 import com.scalar.db.io.Column;
+import com.scalar.db.io.Key;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -41,6 +42,17 @@ public class S3Operation {
     operation
         .getClusteringKey()
         .ifPresent(k -> k.getColumns().forEach(c -> keyMap.put(c.getName(), c)));
+
+    ConcatenationVisitor visitor = new ConcatenationVisitor();
+    metadata.getClusteringKeyNames().forEach(name -> keyMap.get(name).accept(visitor));
+
+    return visitor.build();
+  }
+
+  @Nonnull
+  public String getConcatenatedClusteringKey(Key key) {
+    Map<String, Column<?>> keyMap = new HashMap<>();
+    key.getColumns().forEach(c -> keyMap.put(c.getName(), c));
 
     ConcatenationVisitor visitor = new ConcatenationVisitor();
     metadata.getClusteringKeyNames().forEach(name -> keyMap.get(name).accept(visitor));

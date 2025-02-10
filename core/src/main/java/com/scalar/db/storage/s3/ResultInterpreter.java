@@ -4,6 +4,7 @@ import com.scalar.db.api.Result;
 import com.scalar.db.api.TableMetadata;
 import com.scalar.db.common.ResultImpl;
 import com.scalar.db.io.*;
+import com.scalar.db.util.TimeRelatedColumnEncodingUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Base64;
 import java.util.HashMap;
@@ -80,6 +81,30 @@ public class ResultInterpreter {
         return recordValue == null
             ? BlobColumn.ofNull(name)
             : BlobColumn.of(name, Base64.getDecoder().decode((String) recordValue));
+      case DATE:
+        return recordValue == null
+            ? DateColumn.ofNull(name)
+            : DateColumn.of(
+                name, TimeRelatedColumnEncodingUtils.decodeDate(((Number) recordValue).intValue()));
+      case TIME:
+        return recordValue == null
+            ? TimeColumn.ofNull(name)
+            : TimeColumn.of(
+                name,
+                TimeRelatedColumnEncodingUtils.decodeTime(((Number) recordValue).longValue()));
+      case TIMESTAMP:
+        return recordValue == null
+            ? TimestampColumn.ofNull(name)
+            : TimestampColumn.of(
+                name,
+                TimeRelatedColumnEncodingUtils.decodeTimestamp(((Number) recordValue).longValue()));
+      case TIMESTAMPTZ:
+        return recordValue == null
+            ? TimestampTZColumn.ofNull(name)
+            : TimestampTZColumn.of(
+                name,
+                TimeRelatedColumnEncodingUtils.decodeTimestampTZ(
+                    ((Number) recordValue).longValue()));
       default:
         throw new AssertionError();
     }
