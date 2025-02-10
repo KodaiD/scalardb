@@ -25,21 +25,21 @@ public class PutStatementHandler extends StatementHandler {
           getTable(put),
           mutation.getConcatenatedPartitionKey(),
           mutation.getConcatenatedKey(),
-          mutation.makeRecord());
+          mutation);
     } else if (put.getCondition().get() instanceof PutIfNotExists) {
       insertRecord(
           getNamespace(put),
           getTable(put),
           mutation.getConcatenatedPartitionKey(),
           mutation.getConcatenatedKey(),
-          mutation.makeRecord());
+          mutation);
     } else if (put.getCondition().get() instanceof PutIfExists) {
       updateRecord(
           getNamespace(put),
           getTable(put),
           mutation.getConcatenatedPartitionKey(),
           mutation.getConcatenatedKey(),
-          mutation.makeRecord());
+          mutation);
     } else {
       assert put.getCondition().get() instanceof PutIf;
       conditionalUpdateRecord(
@@ -47,21 +47,19 @@ public class PutStatementHandler extends StatementHandler {
           getTable(put),
           mutation.getConcatenatedPartitionKey(),
           mutation.getConcatenatedKey(),
-          mutation.makeRecord(),
+          mutation,
           put.getCondition().get().getExpressions());
     }
   }
 
   private void upsertRecord(
-      String namespace, String table, String partition, String concatenatedKey, S3Record record)
+      String namespace, String table, String partition, String concatenatedKey, S3Mutation mutation)
       throws ExecutionException {
     String objectKey = S3Utils.getObjectKey(namespace, table, partition, concatenatedKey);
     try {
       S3ClientWrapperResponse response = wrapper.get(objectKey);
       S3Record currentRecord = JsonConvertor.deserialize(response.getValue(), S3Record.class);
-
-      currentRecord.getValues().forEach((key, value) -> record.getValues().putIfAbsent(key, value));
-
+      S3Record record = mutation.makeRecord(currentRecord);
       if (!wrapper.compareAndSwap(objectKey, JsonConvertor.serialize(record), response.getETag())) {
         throw new RetriableExecutionException(
             CoreError.S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION.buildMessage());
@@ -69,6 +67,7 @@ public class PutStatementHandler extends StatementHandler {
     } catch (S3ClientWrapperException e) {
       if (e.getCode() == S3ClientWrapperException.StatusCode.NOT_FOUND) {
         try {
+          S3Record record = mutation.makeRecord();
           wrapper.insert(objectKey, JsonConvertor.serialize(record));
         } catch (S3ClientWrapperException e2) {
           if (e2.getCode() == S3ClientWrapperException.StatusCode.ALREADY_EXISTS
@@ -85,16 +84,19 @@ public class PutStatementHandler extends StatementHandler {
       } else {
         throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
       }
+    } catch (ExecutionException e) {
+      throw e;
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     }
   }
 
   private void insertRecord(
-      String namespace, String table, String partition, String concatenatedKey, S3Record record)
+      String namespace, String table, String partition, String concatenatedKey, S3Mutation mutation)
       throws ExecutionException {
     String objectKey = S3Utils.getObjectKey(namespace, table, partition, concatenatedKey);
     try {
+      S3Record record = mutation.makeRecord();
       wrapper.insert(objectKey, JsonConvertor.serialize(record));
     } catch (S3ClientWrapperException e) {
       if (e.getCode() == S3ClientWrapperException.StatusCode.CONFLICT) {
@@ -111,15 +113,13 @@ public class PutStatementHandler extends StatementHandler {
   }
 
   private void updateRecord(
-      String namespace, String table, String partition, String concatenatedKey, S3Record record)
+      String namespace, String table, String partition, String concatenatedKey, S3Mutation mutation)
       throws ExecutionException {
     String objectKey = S3Utils.getObjectKey(namespace, table, partition, concatenatedKey);
     try {
       S3ClientWrapperResponse response = wrapper.get(objectKey);
       S3Record currentRecord = JsonConvertor.deserialize(response.getValue(), S3Record.class);
-
-      currentRecord.getValues().forEach((key, value) -> record.getValues().putIfAbsent(key, value));
-
+      S3Record record = mutation.makeRecord(currentRecord);
       if (!wrapper.compareAndSwap(objectKey, JsonConvertor.serialize(record), response.getETag())) {
         throw new RetriableExecutionException(
             CoreError.S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION.buildMessage());
@@ -130,6 +130,8 @@ public class PutStatementHandler extends StatementHandler {
       } else {
         throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
       }
+    } catch (ExecutionException e) {
+      throw e;
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     }
@@ -140,7 +142,7 @@ public class PutStatementHandler extends StatementHandler {
       String table,
       String partition,
       String concatenatedKey,
-      S3Record record,
+      S3Mutation mutation,
       List<ConditionalExpression> expressions)
       throws ExecutionException {
     String objectKey = S3Utils.getObjectKey(namespace, table, partition, concatenatedKey);
@@ -151,9 +153,7 @@ public class PutStatementHandler extends StatementHandler {
       if (!areConditionsMet(currentRecord, expressions)) {
         throw new NoMutationException(CoreError.NO_MUTATION_APPLIED.buildMessage());
       }
-
-      currentRecord.getValues().forEach((key, value) -> record.getValues().putIfAbsent(key, value));
-
+      S3Record record = mutation.makeRecord(currentRecord);
       if (!wrapper.compareAndSwap(objectKey, JsonConvertor.serialize(record), response.getETag())) {
         throw new RetriableExecutionException(
             CoreError.S3_TRANSACTION_CONFLICT_OCCURRED_IN_MUTATION.buildMessage());
@@ -164,6 +164,8 @@ public class PutStatementHandler extends StatementHandler {
       } else {
         throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
       }
+    } catch (ExecutionException e) {
+      throw e;
     } catch (Exception e) {
       throw new ExecutionException(CoreError.S3_ERROR_OCCURRED_IN_MUTATION.buildMessage(), e);
     }

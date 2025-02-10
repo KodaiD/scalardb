@@ -83,11 +83,11 @@ public class SelectStatementHandler extends StatementHandler {
               .filter(
                   r -> {
                     if (scan.getStartInclusive()) {
-                      return new ClusteringKeyComparator(orders)
+                      return new ClusteringKeyComparator(orders, metadata)
                               .compare(r.getClusteringKey(), startClusteringKey)
                           >= 0;
                     } else {
-                      return new ClusteringKeyComparator(orders)
+                      return new ClusteringKeyComparator(orders, metadata)
                               .compare(r.getClusteringKey(), startClusteringKey)
                           > 0;
                     }
@@ -110,11 +110,11 @@ public class SelectStatementHandler extends StatementHandler {
               .filter(
                   r -> {
                     if (scan.getEndInclusive()) {
-                      return new ClusteringKeyComparator(orders)
+                      return new ClusteringKeyComparator(orders, metadata)
                               .compare(r.getClusteringKey(), endClusteringKey)
                           <= 0;
                     } else {
-                      return new ClusteringKeyComparator(orders)
+                      return new ClusteringKeyComparator(orders, metadata)
                               .compare(r.getClusteringKey(), endClusteringKey)
                           < 0;
                     }
@@ -126,7 +126,7 @@ public class SelectStatementHandler extends StatementHandler {
         .forEach(ordering -> orders.put(ordering.getColumnName(), ordering.getOrder()));
     records.sort(
         (r1, r2) ->
-            new ClusteringKeyComparator(orders)
+            new ClusteringKeyComparator(orders, metadata)
                 .compare(r1.getClusteringKey(), r2.getClusteringKey()));
 
     if (scan.getLimit() > 0) {

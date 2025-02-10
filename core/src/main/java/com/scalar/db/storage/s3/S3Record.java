@@ -29,6 +29,14 @@ public class S3Record extends S3DatabaseObject {
     this.values = values != null ? values : Collections.emptyMap();
   }
 
+  public S3Record(S3Record record) {
+    this(
+        record.getConcatenatedKey(),
+        record.getPartitionKey(),
+        record.getClusteringKey(),
+        record.getValues());
+  }
+
   public String getConcatenatedKey() {
     return concatenatedKey;
   }

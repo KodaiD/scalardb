@@ -33,6 +33,20 @@ public class S3Mutation extends S3Operation {
         toMapForPut(put));
   }
 
+  @Nonnull
+  public S3Record makeRecord(S3Record existingRecord) {
+    Mutation mutation = (Mutation) getOperation();
+
+    if (mutation instanceof Delete) {
+      return new S3Record();
+    }
+    Put put = (Put) mutation;
+
+    S3Record newRecord = new S3Record(existingRecord);
+    toMapForPut(put).forEach((k, v) -> newRecord.getValues().put(k, v));
+    return newRecord;
+  }
+
   private Map<String, Object> toMap(Collection<Column<?>> columns) {
     MapVisitor visitor = new MapVisitor();
     columns.forEach(c -> c.accept(visitor));
