@@ -2,6 +2,9 @@ package com.scalar.db.storage.s3;
 
 import com.scalar.db.exception.transaction.TransactionException;
 import com.scalar.db.transaction.consensuscommit.ConsensusCommitIntegrationTestBase;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import java.util.Properties;
 
 public class ConsensusCommitIntegrationTestWithS3 extends ConsensusCommitIntegrationTestBase {
@@ -15,19 +18,19 @@ public class ConsensusCommitIntegrationTestWithS3 extends ConsensusCommitIntegra
     return false;
   }
 
+  @Test
   @Override
-  public void get_GetGivenForIndexColumn_ShouldReturnRecords() throws TransactionException {
-    // This test is not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void get_GetGivenForIndexColumn_ShouldReturnRecords() throws TransactionException {}
 
+  @Test
   @Override
-  public void scan_ScanGivenForIndexColumn_ShouldReturnRecords() throws TransactionException {
-    // This test is not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void scan_ScanGivenForIndexColumn_ShouldReturnRecords() throws TransactionException {}
 
+  @Test
   @Override
+  @Disabled("Index-related operations are not supported for S3")
   public void scan_ScanGivenForIndexColumnWithConjunctions_ShouldReturnRecords()
-      throws TransactionException {
-    // This test is not supported for S3
-  }
+      throws TransactionException {}
 }

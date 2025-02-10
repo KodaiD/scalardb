@@ -3,6 +3,8 @@ package com.scalar.db.storage.s3;
 import com.scalar.db.transaction.consensuscommit.ConsensusCommitAdminIntegrationTestBase;
 import com.scalar.db.util.AdminTestUtils;
 import java.util.Properties;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class ConsensusCommitAdminIntegrationTestWithS3
     extends ConsensusCommitAdminIntegrationTestBase {
@@ -16,48 +18,48 @@ public class ConsensusCommitAdminIntegrationTestWithS3
     return new S3AdminTestUtils(getProperties(testName));
   }
 
+  @Test
   @Override
-  public void createIndex_ForAllDataTypesWithExistingData_ShouldCreateIndexesCorrectly() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void createIndex_ForAllDataTypesWithExistingData_ShouldCreateIndexesCorrectly() {}
 
+  @Test
   @Override
-  public void createIndex_ForNonExistingTable_ShouldThrowIllegalArgumentException() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void createIndex_ForNonExistingTable_ShouldThrowIllegalArgumentException() {}
 
+  @Test
   @Override
-  public void createIndex_ForNonExistingColumn_ShouldThrowIllegalArgumentException() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void createIndex_ForNonExistingColumn_ShouldThrowIllegalArgumentException() {}
 
+  @Test
   @Override
-  public void createIndex_ForAlreadyExistingIndex_ShouldThrowIllegalArgumentException() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void createIndex_ForAlreadyExistingIndex_ShouldThrowIllegalArgumentException() {}
 
+  @Test
   @Override
-  public void createIndex_IfNotExists_ForAlreadyExistingIndex_ShouldNotThrowAnyException() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void createIndex_IfNotExists_ForAlreadyExistingIndex_ShouldNotThrowAnyException() {}
 
+  @Test
   @Override
-  public void dropIndex_ForAllDataTypesWithExistingData_ShouldDropIndexCorrectly() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void dropIndex_ForAllDataTypesWithExistingData_ShouldDropIndexCorrectly() {}
 
+  @Test
   @Override
-  public void dropIndex_ForNonExistingTable_ShouldThrowIllegalArgumentException() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void dropIndex_ForNonExistingTable_ShouldThrowIllegalArgumentException() {}
 
+  @Test
   @Override
-  public void dropIndex_ForNonExistingIndex_ShouldThrowIllegalArgumentException() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void dropIndex_ForNonExistingIndex_ShouldThrowIllegalArgumentException() {}
 
+  @Test
   @Override
-  public void dropIndex_IfExists_ForNonExistingIndex_ShouldNotThrowAnyException() {
-    // Index-related operations are not supported for S3
-  }
+  @Disabled("Index-related operations are not supported for S3")
+  public void dropIndex_IfExists_ForNonExistingIndex_ShouldNotThrowAnyException() {}
 }
